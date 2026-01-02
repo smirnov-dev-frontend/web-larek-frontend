@@ -1,5 +1,5 @@
 export interface IView<T> {
-   render(data: T): void;
+   render(data?: Partial<T>): HTMLElement;
 }
 
 export interface IModal {

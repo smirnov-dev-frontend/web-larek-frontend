@@ -9,6 +9,4 @@ export interface ICatalogPresenter extends IPresenter {
 
 export interface ICartPresenter extends IPresenter { }
 
-export interface IOrderPresenter extends IPresenter {
-   submitOrder(): void;
-}
+export interface IOrderPresenter extends IPresenter { }
