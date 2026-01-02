@@ -18,13 +18,12 @@ export interface IProductListView {
 
 export interface ICartView {
    render(items: HTMLElement[], total: number): HTMLElement;
-   setTotal(total: number): void;
-   setOrderButtonEnabled(enabled: boolean): void;
 }
 
 export interface IFormView {
    showError(message: string): void;
    clear(): void;
+   setSubmitEnabled(enabled: boolean): void;
 }
 
 export interface IOrderContactsView extends IFormView { }

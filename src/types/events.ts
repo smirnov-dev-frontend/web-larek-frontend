@@ -8,8 +8,10 @@ export enum AppEvent {
    ORDER_SUBMIT = 'order:submit',
    ORDER_SUCCESS = 'order:success',
    ORDER_SUCCESS_CLOSE = 'order:success:close',
-}
 
+   MODAL_OPEN = 'modal:open',
+   MODAL_CLOSE = 'modal:close',
+}
 
 export interface ProductSelectedEvent {
    productId: string;
@@ -23,7 +25,29 @@ export interface CartRemoveEvent {
    productId: string;
 }
 
+export interface OrderContactsSubmitEvent {
+   email: string;
+   phone: string;
+}
+
+export interface OrderAddressSubmitEvent {
+   address: string;
+   payment: 'card' | 'cash';
+}
+
+export interface OrderSubmitEvent {
+   timestamp?: number;
+}
+
 export interface OrderSuccessEvent {
    orderId: string;
    total: number;
+}
+
+export interface ModalOpenEvent {
+   content?: HTMLElement | string;
+}
+
+export interface ModalCloseEvent {
+   reason?: string;
 }
