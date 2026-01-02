@@ -280,7 +280,7 @@ setImage(
 - переключает состояние модального окна (открыть/закрыть);
 - удобно для тестирования и переиспользования;
 
-`setContent(content: HTMLElement | string): void`\
+`setContent(content: HTMLElement | string): void`
 - задаёт содержимое модального окна;
 - если передана строка, превращает её в HTML;
 - если передан HTMLElement, вставляет его внутрь контейнера;
@@ -518,6 +518,7 @@ setImage(
 при клике на кнопку закрытия генерируется событие `order:success:close`.
 ##### События
 `order:success:close`
+
 ---
 ### Управляющий слой (Presenter)
 
