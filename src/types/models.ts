@@ -9,6 +9,7 @@ export interface IProductModel {
 export interface ICartModel {
    addProduct(product: ApiProduct): void;
    removeProduct(productId: string): void;
+   hasProduct(productId: string): boolean;
    getItems(): ApiProduct[];
    getTotalPrice(): number;
    clear(): void;

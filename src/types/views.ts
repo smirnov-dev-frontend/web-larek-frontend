@@ -1,4 +1,3 @@
-import { ApiProduct } from './api';
 import { IView, IModal } from './common';
 
 export interface ProductCardViewData {
