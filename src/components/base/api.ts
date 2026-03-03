@@ -1,4 +1,4 @@
-type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
+export type ApiPostMethod = 'POST' | 'PUT' | 'DELETE';
 
 export class Api {
     readonly baseUrl: string;
@@ -6,32 +6,54 @@ export class Api {
 
     constructor(baseUrl: string, options: RequestInit = {}) {
         this.baseUrl = baseUrl;
+
+        const baseHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        const extraHeaders =
+            options.headers && typeof options.headers === 'object'
+                ? (options.headers as Record<string, string>)
+                : {};
+
         this.options = {
+            ...options,
             headers: {
-                'Content-Type': 'application/json',
-                ...(options.headers as object ?? {})
-            }
+                ...baseHeaders,
+                ...extraHeaders,
+            },
         };
     }
 
-    protected handleResponse<T>(response: Response): Promise<T> {
-        if (response.ok) return response.json();
-        else return response.json()
-            .then(data => Promise.reject(data.error ?? response.statusText));
+    protected async handleResponse<T>(response: Response): Promise<T> {
+        const contentType = response.headers.get('content-type') ?? '';
+        const isJson = contentType.includes('application/json');
+
+        if (response.ok) {
+            return (isJson ? await response.json() : (await response.text())) as T;
+        }
+
+        if (isJson) {
+            const data = (await response.json()) as { error?: string };
+            return Promise.reject(data.error ?? response.statusText);
+        }
+
+        const text = await response.text();
+        return Promise.reject(text || response.statusText);
     }
 
-    get<T extends object>(uri: string) {
+    get<T>(uri: string): Promise<T> {
         return fetch(this.baseUrl + uri, {
             ...this.options,
-            method: 'GET'
-        }).then(this.handleResponse<T>);
+            method: 'GET',
+        }).then((r) => this.handleResponse<T>(r));
     }
 
-    post<T extends object>(uri: string, data: object, method: ApiPostMethods = 'POST') {
+    post<T>(uri: string, data: unknown, method: ApiPostMethod = 'POST'): Promise<T> {
         return fetch(this.baseUrl + uri, {
             ...this.options,
             method,
-            body: JSON.stringify(data)
-        }).then(this.handleResponse<T>);
+            body: JSON.stringify(data),
+        }).then((r) => this.handleResponse<T>(r));
     }
 }

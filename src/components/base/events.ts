@@ -1,66 +1,69 @@
-type EventName = string | RegExp;
-type Subscriber = Function;
+export type EventName = string | RegExp;
+export type Subscriber<T = unknown> = (data: T) => void;
+
 type EmitterEvent = {
-    eventName: string,
-    data: unknown
+    eventName: string;
+    data: unknown;
 };
 
 export interface IEvents {
-    on<T extends object>(event: EventName, callback: (data: T) => void): void;
-    emit<T extends object>(event: string, data?: T): void;
-    trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void;
+    on<T>(event: EventName, callback: Subscriber<T>): void;
+    off<T>(event: EventName, callback: Subscriber<T>): void;
+    emit<T>(event: string, data?: T): void;
+    trigger<T>(event: string, context?: Partial<T>): (data: T) => void;
 }
 
 export class EventEmitter implements IEvents {
-    _events: Map<EventName, Set<Subscriber>>;
+    private events: Map<EventName, Set<Subscriber>> = new Map();
 
-    constructor() {
-        this._events = new Map<EventName, Set<Subscriber>>();
-    }
-
-    on<T extends object>(eventName: EventName, callback: (event: T) => void) {
-        if (!this._events.has(eventName)) {
-            this._events.set(eventName, new Set<Subscriber>());
+    on<T>(eventName: EventName, callback: Subscriber<T>): void {
+        if (!this.events.has(eventName)) {
+            this.events.set(eventName, new Set());
         }
-        this._events.get(eventName)?.add(callback);
+        this.events.get(eventName)!.add(callback as Subscriber);
     }
 
-    off(eventName: EventName, callback: Subscriber) {
-        if (this._events.has(eventName)) {
-            this._events.get(eventName)!.delete(callback);
-            if (this._events.get(eventName)?.size === 0) {
-                this._events.delete(eventName);
-            }
-        }
+    off<T>(eventName: EventName, callback: Subscriber<T>): void {
+        const subs = this.events.get(eventName);
+        if (!subs) return;
+
+        subs.delete(callback as Subscriber);
+        if (subs.size === 0) this.events.delete(eventName);
     }
 
-    emit<T extends object>(eventName: string, data?: T) {
-        this._events.forEach((subscribers, name) => {
-            if (name === '*') subscribers.forEach(callback => callback({
-                eventName,
-                data
-            }));
-            if (name instanceof RegExp && name.test(eventName) || name === eventName) {
-                subscribers.forEach(callback => callback(data));
+    emit<T>(eventName: string, data?: T): void {
+        this.events.forEach((subscribers, name) => {
+            if (name === '*') {
+                subscribers.forEach((callback) =>
+                    callback({
+                        eventName,
+                        data,
+                    } satisfies EmitterEvent)
+                );
+                return;
             }
+
+            const matched = name instanceof RegExp ? name.test(eventName) : name === eventName;
+            if (matched) subscribers.forEach((callback) => callback(data));
         });
     }
 
-    onAll(callback: (event: EmitterEvent) => void) {
-        this.on("*", callback);
+    onAll(callback: (event: EmitterEvent) => void): void {
+        this.on('*', callback);
     }
 
-    offAll() {
-        this._events = new Map<string, Set<Subscriber>>();
+    offAll(): void {
+        this.events.clear();
     }
 
-    trigger<T extends object>(eventName: string, context?: Partial<T>) {
-        return (event: object = {}) => {
-            this.emit(eventName, {
-                ...(event || {}),
-                ...(context || {})
-            });
+    trigger<T>(eventName: string, context?: Partial<T>): (data: T) => void {
+        return (data: T) => {
+            const payload =
+                context && typeof context === 'object'
+                    ? ({ ...(data as object), ...(context as object) } as T)
+                    : data;
+
+            this.emit(eventName, payload);
         };
     }
 }
-
