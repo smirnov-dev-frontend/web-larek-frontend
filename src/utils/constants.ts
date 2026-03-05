@@ -1,4 +1,4 @@
-const ORIGIN = String(import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/+$/, '');
+const ORIGIN = String(import.meta.env.VITE_API_ORIGIN ?? 'https://larek-api.nomoreparties.co').replace(/\/+$/, '');
 
 export const API_URL = `${ORIGIN}/api/weblarek`;
 export const CDN_URL = `${ORIGIN}/content/weblarek/`;
