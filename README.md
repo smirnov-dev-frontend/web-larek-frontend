@@ -3,10 +3,10 @@
 
 ## Описание проекта
 
-Web-ларёк — веб-приложение интернет-магазина с товарами для веб-разработчиков.
+Web-ларёк – веб-приложение интернет-магазина с товарами для веб-разработчиков.
 Приложение позволяет просматривать каталог товаров, добавлять товары в корзину и оформлять заказ в два шага.
 
-Цель проекта — спроектировать и реализовать архитектуру веб-приложения на TypeScript с использованием ООП и документировать архитектурные решения.
+Цель проекта – спроектировать и реализовать архитектуру веб-приложения на TypeScript с использованием ООП и документировать архитектурные решения.
 
 Архитектура реализована по паттерну **MVP (Model–View–Presenter)**. Взаимодействие между слоями организовано через **брокер событий (EventEmitter)**, что обеспечивает слабую связанность компонентов.
 
@@ -64,10 +64,10 @@ npm run build
 
 Проект разделён на слои:
 
-* **Model** — состояние и бизнес-логика (каталог, корзина, заказ).
-* **View** — отображение и работа с DOM (компоненты интерфейса).
-* **Presenter** — сценарии приложения и связывание Model/View.
-* **Infrastructure** — API, клиент API, брокер событий, утилиты.
+* **Model** – состояние и бизнес-логика (каталог, корзина, заказ).
+* **View** – отображение и работа с DOM (компоненты интерфейса).
+* **Presenter** – сценарии приложения и связывание Model/View.
+* **Infrastructure** – API, клиент API, брокер событий, утилиты.
 
 Взаимодействие между частями приложения построено через события, что исключает прямые зависимости между слоями.
 
@@ -87,11 +87,11 @@ npm run build
 
 **Основные методы:**
 
-* `on(eventName, callback)` — подписка
-* `off(eventName, callback)` — отписка
-* `emit(eventName, payload?)` — генерация события
-* `trigger(eventName, context?)` — создание функции-триггера
-* `onAll(callback)` / `offAll()` — подписка на все события / очистка
+* `on(eventName, callback)` – подписка
+* `off(eventName, callback)` – отписка
+* `emit(eventName, payload?)` – генерация события
+* `trigger(eventName, context?)` – создание функции-триггера
+* `onAll(callback)` / `offAll()` – подписка на все события / очистка
 
 ---
 
@@ -124,9 +124,9 @@ npm run build
 
 ### Константы (`src/utils/constants.ts`)
 
-* `API_URL` — базовый URL API: `${VITE_API_ORIGIN}/api/weblarek`
-* `CDN_URL` — базовый URL CDN: `${VITE_API_ORIGIN}/content/weblarek/`
-* `categoryMap` — соответствие категории товара CSS-модификатору
+* `API_URL` – базовый URL API: `${VITE_API_ORIGIN}/api/weblarek`
+* `CDN_URL` – базовый URL CDN: `${VITE_API_ORIGIN}/content/weblarek/`
+* `categoryMap` – соответствие категории товара CSS-модификатору
 
 ---
 
@@ -142,9 +142,9 @@ npm run build
 
 **Методы:**
 
-* `loadProducts(): Promise<void>` — загрузка каталога
-* `getProducts(): ApiProduct[]` — получить список
-* `getProductById(id: string): ApiProduct | undefined` — получить товар по id
+* `loadProducts(): Promise<void>` – загрузка каталога
+* `getProducts(): ApiProduct[]` – получить список
+* `getProductById(id: string): ApiProduct | undefined` – получить товар по id
 
 ---
 
@@ -210,15 +210,15 @@ npm run build
 
 ### Основные отображения
 
-* `ProductCardView` — карточка товара в каталоге, эмитит `product:selected`
-* `ProductListView` — размещает готовые DOM-элементы карточек в контейнер
-* `ProductPreviewView` — превью товара в модалке, эмитит `cart:add` / `cart:remove`
-* `BasketView` — отображение корзины (список, total, кнопка оформления)
-* `BasketItemView` — элемент корзины (удаление товара → `cart:remove`)
-* `HeaderBasketView` — кнопка корзины + счётчик, эмитит `cart:open`
-* `OrderAddressView` — шаг 1 (оплата + адрес), эмитит `order:address:submit`
-* `OrderContactsView` — шаг 2 (email + телефон), эмитит `order:contacts:submit`
-* `OrderSuccessView` — экран успеха, эмитит `order:success:close`
+* `ProductCardView` – карточка товара в каталоге, эмитит `product:selected`
+* `ProductListView` – размещает готовые DOM-элементы карточек в контейнер
+* `ProductPreviewView` – превью товара в модалке, эмитит `cart:add` / `cart:remove`
+* `BasketView` – отображение корзины (список, total, кнопка оформления)
+* `BasketItemView` – элемент корзины (удаление товара – `cart:remove`)
+* `HeaderBasketView` – кнопка корзины + счётчик, эмитит `cart:open`
+* `OrderAddressView` – шаг 1 (оплата + адрес), эмитит `order:address:submit`
+* `OrderContactsView` – шаг 2 (email + телефон), эмитит `order:contacts:submit`
+* `OrderSuccessView` – экран успеха, эмитит `order:success:close`
 
 ---
 
@@ -251,9 +251,9 @@ npm run build
 
 Сценарий оформления заказа:
 
-* `order:submit` → шаг 1 (оплата + адрес)
-* `order:address:submit` → шаг 2 (контакты)
-* `order:contacts:submit` → отправка заказа через `OrderModel`
+* `order:submit` – шаг 1 (оплата + адрес)
+* `order:address:submit` – шаг 2 (контакты)
+* `order:contacts:submit` – отправка заказа через `OrderModel`
 * после успеха: показывает `OrderSuccessView`, очищает корзину и эмитит `cart:clear`
 
 ---
