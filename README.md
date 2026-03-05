@@ -1,12 +1,7 @@
 
 # Web-ларёк
 
-## Демо
-
-Проект доступен по ссылке:  
-https://<username>.github.io/web-larek-frontend/
-
----
+Ссылка на GitHub Pages: https://smirnov-dev-frontend.github.io/web-larek-frontend/
 
 ## Описание проекта
 
