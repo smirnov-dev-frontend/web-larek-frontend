@@ -1,3 +1,5 @@
+import { PaymentMethod } from './api';
+
 export enum AppEvent {
    PRODUCT_SELECTED = 'product:selected',
    CART_ADD = 'cart:add',
@@ -35,7 +37,7 @@ export interface OrderContactsSubmitEvent {
 
 export interface OrderAddressSubmitEvent {
    address: string;
-   payment: 'card' | 'cash';
+   payment: PaymentMethod;
 }
 
 export interface OrderSubmitEvent {
@@ -54,6 +56,7 @@ export interface ModalOpenEvent {
 export interface ModalCloseEvent {
    reason?: string;
 }
+
 export interface CartOpenEvent { }
 
 export interface CartClearEvent { }

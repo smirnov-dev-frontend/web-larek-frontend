@@ -1,6 +1,6 @@
 import { EventEmitter } from '../components/base/Events';
 import { cloneTemplate } from '../utils/utils';
-import type { IProductModel, IProductListView, ApiProduct, ICartModel } from '../types';
+import type { IProductModel, IProductListView, ApiProduct } from '../types';
 import { AppEvent } from '../types';
 import { ProductCardView } from '../views/product-card';
 import { ProductPreviewView } from '../views/product-preview';
@@ -10,31 +10,36 @@ function formatPrice(price: number | null): string {
    return price === null ? 'Бесценно' : `${price} синапсов`;
 }
 
+type CardWithMedia = ProductCardView & { category: string; image: string };
+
 export class CatalogPresenter {
    private cards: Map<string, ProductCardView> = new Map();
+   private cartIds: Set<string> = new Set();
 
    constructor(
       private readonly productModel: IProductModel,
-      private readonly cartModel: ICartModel,
       private readonly productListView: IProductListView,
       private readonly modal: Modal,
       private readonly events: EventEmitter
    ) { }
 
    init(): void {
-      this.events.on(AppEvent.PRODUCT_SELECTED, (e: { productId: string }) =>
-         this.openPreview(e.productId)
-      );
+      this.events.on(AppEvent.PRODUCT_SELECTED, (e: { productId: string }) => this.openPreview(e.productId));
 
-      this.events.on(AppEvent.CART_ADD, (e: { productId: string }) =>
-         this.addToCart(e.productId)
-      );
+      this.events.on(AppEvent.CART_ADD, (e: { productId: string }) => {
+         this.cartIds.add(e.productId);
+         this.updateCardState(e.productId);
+      });
 
-      this.events.on(AppEvent.CART_REMOVE, (e: { productId: string }) =>
-         this.removeFromCart(e.productId)
-      );
+      this.events.on(AppEvent.CART_REMOVE, (e: { productId: string }) => {
+         this.cartIds.delete(e.productId);
+         this.updateCardState(e.productId);
+      });
 
-      this.events.on(AppEvent.CART_CLEAR, () => this.renderCatalog());
+      this.events.on(AppEvent.CART_CLEAR, () => {
+         this.cartIds.clear();
+         this.renderCatalog();
+      });
 
       void this.bootstrap();
    }
@@ -46,23 +51,32 @@ export class CatalogPresenter {
 
    private renderCatalog(): void {
       const products = this.productModel.getProducts();
-      const nodes = products.map(p => this.createCardNode(p));
+      const nodes = products.map((p) => this.createCardNode(p));
       this.productListView.render(nodes);
+   }
+
+   private updateCardState(productId: string): void {
+      const card = this.cards.get(productId);
+      if (!card) return;
+
+      card.render({
+         isInCart: this.cartIds.has(productId),
+      } as unknown as Partial<unknown>);
    }
 
    private createCardNode(product: ApiProduct): HTMLElement {
       const node = cloneTemplate<HTMLButtonElement>('#card-catalog');
-
       const card = new ProductCardView(node, this.events);
 
-      (card as any).category = product.category;
-      (card as any).image = product.image;
+      const cardWithMedia = card as CardWithMedia;
+      cardWithMedia.category = product.category;
+      cardWithMedia.image = product.image;
 
       card.render({
          id: product.id,
          title: product.title,
          price: formatPrice(product.price),
-         isInCart: this.cartModel.hasProduct(product.id),
+         isInCart: this.cartIds.has(product.id),
       });
 
       this.cards.set(product.id, card);
@@ -79,26 +93,11 @@ export class CatalogPresenter {
       preview.render(
          ProductPreviewView.fromProduct(
             product,
-            this.cartModel.hasProduct(productId)
+            this.cartIds.has(productId)
          )
       );
 
       this.modal.setContent(node);
       this.modal.open();
-   }
-
-   private addToCart(productId: string): void {
-      const product = this.productModel.getProductById(productId);
-      if (!product) return;
-
-      this.cartModel.addProduct(product);
-
-      this.renderCatalog();
-   }
-
-   private removeFromCart(productId: string): void {
-      this.cartModel.removeProduct(productId);
-
-      this.renderCatalog();
    }
 }

@@ -46,7 +46,13 @@ export class ProductCardView extends Component<ProductCardViewData> {
       this.priceEl.textContent = value;
    }
 
-   setSelected(_selected: boolean): void {
+   set isInCart(value: boolean) {
+      this.container.classList.toggle('card_in-cart', value);
+      this.container.setAttribute('data-in-cart', value ? 'true' : 'false');
+   }
+
+   setSelected(selected: boolean): void {
+      this.container.classList.toggle('card_selected', selected);
    }
 
    override render(data?: Partial<ProductCardViewData>): HTMLElement {

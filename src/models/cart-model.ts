@@ -1,29 +1,25 @@
-import type { ApiProduct, ICartModel } from '../types';
+import type { ICartModel } from '../types';
 
 export class CartModel implements ICartModel {
-   private items: ApiProduct[] = [];
+   private items: string[] = [];
 
    constructor() { }
 
-   addProduct(product: ApiProduct): void {
-      if (this.hasProduct(product.id)) return;
-      this.items = [...this.items, product];
+   addProduct(productId: string): void {
+      if (this.hasProduct(productId)) return;
+      this.items = [...this.items, productId];
    }
 
    removeProduct(productId: string): void {
-      this.items = this.items.filter(p => p.id !== productId);
+      this.items = this.items.filter((id) => id !== productId);
    }
 
    hasProduct(productId: string): boolean {
-      return this.items.some(p => p.id === productId);
+      return this.items.includes(productId);
    }
 
-   getItems(): ApiProduct[] {
+   getItems(): string[] {
       return this.items;
-   }
-
-   getTotalPrice(): number {
-      return this.items.reduce((sum, p) => sum + (p.price ?? 0), 0);
    }
 
    clear(): void {

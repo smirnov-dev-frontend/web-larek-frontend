@@ -11,6 +11,10 @@ function formatPrice(price: number | null): string {
    return price === null ? 'Бесценно' : `${price} синапсов`;
 }
 
+function calcTotal(products: ApiProduct[]): number {
+   return products.reduce((sum, p) => sum + (p.price ?? 0), 0);
+}
+
 export class CartPresenter {
    private isCartOpen = false;
 
@@ -21,6 +25,7 @@ export class CartPresenter {
       private readonly modal: Modal,
       private readonly events: EventEmitter
    ) { }
+
    init(): void {
       this.events.on(AppEvent.CART_OPEN, () => this.openCart());
       this.events.on(AppEvent.CART_ADD, (e: { productId: string }) => this.onAdd(e.productId));
@@ -34,6 +39,7 @@ export class CartPresenter {
       this.events.on(AppEvent.MODAL_CLOSE, () => {
          this.isCartOpen = false;
       });
+
       this.events.on(AppEvent.ORDER_SUBMIT, () => {
          this.isCartOpen = false;
       });
@@ -46,24 +52,19 @@ export class CartPresenter {
    }
 
    private onAdd(productId: string): void {
-      const product = this.productModel.getProductById(productId);
-      if (!product) return;
+      if (!this.productModel.getProductById(productId)) return;
 
-      this.cartModel.addProduct(product);
+      this.cartModel.addProduct(productId);
       this.syncCounter();
 
-      if (this.isCartOpen) {
-         this.renderCartIntoModal();
-      }
+      if (this.isCartOpen) this.renderCartIntoModal();
    }
 
    private onRemove(productId: string): void {
       this.cartModel.removeProduct(productId);
       this.syncCounter();
 
-      if (this.isCartOpen) {
-         this.renderCartIntoModal();
-      }
+      if (this.isCartOpen) this.renderCartIntoModal();
    }
 
    private openCart(): void {
@@ -75,14 +76,20 @@ export class CartPresenter {
       const basketRoot = cloneTemplate<HTMLElement>('#basket');
       const basket = new BasketView(basketRoot);
 
-      const items = this.cartModel.getItems();
-      const itemNodes = items.map((p, idx) => this.createBasketItemNode(p, idx + 1));
+      const ids = this.cartModel.getItems();
+
+      const products: ApiProduct[] = ids
+         .map((id) => this.productModel.getProductById(id))
+         .filter((p): p is ApiProduct => Boolean(p));
+
+      const itemNodes = products.map((p, idx) => this.createBasketItemNode(p, idx + 1));
       basket.setItems(itemNodes);
 
-      const total = this.cartModel.getTotalPrice();
+      const total = calcTotal(products);
       basket.setTotal(`${total} синапсов`);
 
-      basket.setOrderEnabled(items.length > 0);
+      basket.setOrderEnabled(ids.length > 0);
+
       basket.onOrderClick(() => {
          this.events.emit(AppEvent.ORDER_SUBMIT, { timestamp: Date.now() });
       });

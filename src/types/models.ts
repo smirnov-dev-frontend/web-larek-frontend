@@ -2,16 +2,15 @@ import { ApiProduct, ApiOrderRequest, ApiOrderResponse } from './api';
 
 export interface IProductModel {
    loadProducts(): Promise<void>;
-   getProducts(): ApiProduct[];
+   getProducts(): readonly ApiProduct[];
    getProductById(id: string): ApiProduct | undefined;
 }
 
 export interface ICartModel {
-   addProduct(product: ApiProduct): void;
+   addProduct(productId: string): void;
    removeProduct(productId: string): void;
    hasProduct(productId: string): boolean;
-   getItems(): ApiProduct[];
-   getTotalPrice(): number;
+   getItems(): readonly string[];
    clear(): void;
 }
 

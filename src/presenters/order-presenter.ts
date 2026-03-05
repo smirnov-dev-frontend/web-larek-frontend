@@ -1,11 +1,15 @@
 import { EventEmitter } from '../components/base/Events';
 import { cloneTemplate } from '../utils/utils';
 import { AppEvent } from '../types';
-import type { ICartModel, IOrderModel, ApiOrderRequest, PaymentMethod } from '../types';
+import type { ICartModel, IOrderModel, IProductModel, ApiOrderRequest, PaymentMethod, ApiProduct } from '../types';
 import { Modal } from '../views/modal';
 import { OrderAddressView } from '../views/order-address';
 import { OrderContactsView } from '../views/order-contacts';
 import { OrderSuccessView } from '../views/order-success';
+
+function calcTotal(products: ApiProduct[]): number {
+   return products.reduce((sum, p) => sum + (p.price ?? 0), 0);
+}
 
 export class OrderPresenter {
    private payment: PaymentMethod | null = null;
@@ -16,6 +20,7 @@ export class OrderPresenter {
    constructor(
       private readonly orderModel: IOrderModel,
       private readonly cartModel: ICartModel,
+      private readonly productModel: IProductModel,
       private readonly modal: Modal,
       private readonly events: EventEmitter
    ) { }
@@ -58,13 +63,19 @@ export class OrderPresenter {
    private async pay(): Promise<void> {
       if (!this.payment) return;
 
-      const items = this.cartModel.getItems();
-      if (items.length === 0) return;
+      const ids = [...this.cartModel.getItems()];
+      if (ids.length === 0) return;
 
-      const total = this.cartModel.getTotalPrice();
+      const products: ApiProduct[] = ids
+         .map((id) => this.productModel.getProductById(id))
+         .filter((p): p is ApiProduct => Boolean(p));
+
+      if (products.length === 0) return;
+
+      const total = calcTotal(products);
 
       const req: ApiOrderRequest = {
-         items: items.map(i => i.id),
+         items: ids,
          total,
          payment: this.payment,
          address: this.address,

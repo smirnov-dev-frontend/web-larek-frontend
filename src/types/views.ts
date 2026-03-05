@@ -1,4 +1,4 @@
-import { IView, IModal } from './common';
+import type { IView, IModal } from './common';
 
 export interface ProductCardViewData {
    id: string;
@@ -16,7 +16,7 @@ export interface IProductListView {
 }
 
 export interface ICartView {
-   render(items: HTMLElement[], total: number): HTMLElement;
+   render(items: HTMLElement[], totalText: string, orderEnabled: boolean): HTMLElement;
 }
 
 export interface IFormView {

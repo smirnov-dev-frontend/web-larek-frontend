@@ -1,7 +1,7 @@
 export type EventName = string | RegExp;
 export type Subscriber<T = unknown> = (data: T) => void;
 
-type EmitterEvent = {
+export type EmitterEvent = {
     eventName: string;
     data: unknown;
 };
@@ -11,6 +11,8 @@ export interface IEvents {
     off<T>(event: EventName, callback: Subscriber<T>): void;
     emit<T>(event: string, data?: T): void;
     trigger<T>(event: string, context?: Partial<T>): (data: T) => void;
+    onAll(callback: (event: EmitterEvent) => void): void;
+    offAll(): void;
 }
 
 export class EventEmitter implements IEvents {
@@ -34,17 +36,26 @@ export class EventEmitter implements IEvents {
     emit<T>(eventName: string, data?: T): void {
         this.events.forEach((subscribers, name) => {
             if (name === '*') {
-                subscribers.forEach((callback) =>
-                    callback({
-                        eventName,
-                        data,
-                    } satisfies EmitterEvent)
-                );
+                for (const callback of Array.from(subscribers)) {
+                    callback({ eventName, data } satisfies EmitterEvent);
+                }
                 return;
             }
 
-            const matched = name instanceof RegExp ? name.test(eventName) : name === eventName;
-            if (matched) subscribers.forEach((callback) => callback(data));
+            let matched = false;
+
+            if (name instanceof RegExp) {
+                name.lastIndex = 0;
+                matched = name.test(eventName);
+            } else {
+                matched = name === eventName;
+            }
+
+            if (matched) {
+                for (const callback of Array.from(subscribers)) {
+                    callback(data);
+                }
+            }
         });
     }
 

@@ -1,5 +1,5 @@
-import { ApiProduct, ApiOrderResponse } from './api';
-import { OrderContactsSubmitEvent, OrderAddressSubmitEvent } from './events';
+import type { ApiOrderResponse } from './api';
+import type { OrderContactsSubmitEvent, OrderAddressSubmitEvent } from './events';
 
 export interface IPresenter {
    init(): void;
@@ -11,7 +11,7 @@ export interface ICatalogPresenter extends IPresenter {
 }
 
 export interface ICartPresenter extends IPresenter {
-   handleAddToCart(product: ApiProduct): void;
+   handleAddToCart(productId: string): void;
    handleRemoveFromCart(productId: string): void;
 }
 

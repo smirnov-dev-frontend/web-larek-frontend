@@ -1,8 +1,7 @@
 import { EventEmitter } from '../components/base/Events';
 import { ensureElement } from '../utils/utils';
 import { AppEvent } from '../types';
-
-type PaymentMethod = 'card' | 'cash';
+import type { PaymentMethod } from '../types';
 
 export class OrderAddressView {
    private readonly form: HTMLFormElement;

@@ -1,5 +1,7 @@
-export const API_URL = `${import.meta.env.VITE_API_ORIGIN}/api/weblarek`;
-export const CDN_URL = `${import.meta.env.VITE_API_ORIGIN}/content/weblarek`;
+const ORIGIN = String(import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/+$/, '');
+
+export const API_URL = `${ORIGIN}/api/weblarek`;
+export const CDN_URL = `${ORIGIN}/content/weblarek/`;
 
 export const categoryMap: Record<string, string> = {
   'софт-скил': 'card__category_soft',
