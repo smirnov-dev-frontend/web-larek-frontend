@@ -1,4 +1,5 @@
 import type { IView, IModal } from './common';
+import type { PaymentMethod } from './api';
 
 export interface ProductCardViewData {
    id: string;
@@ -15,22 +16,34 @@ export interface IProductListView {
    render(items: HTMLElement[]): HTMLElement;
 }
 
-export interface ICartView {
-   render(items: HTMLElement[], totalText: string, orderEnabled: boolean): HTMLElement;
+export interface BasketViewData {
+   items: HTMLElement[];
+   total: string;
+   orderEnabled: boolean;
 }
 
-export interface IFormView {
-   showError(message: string): void;
-   clear(): void;
-   setSubmitEnabled(enabled: boolean): void;
+export interface ICartView extends IView<BasketViewData> { }
+
+export interface OrderAddressViewData {
+   payment: PaymentMethod | null;
+   address: string;
+   errors: string;
+   valid: boolean;
 }
 
-export interface IOrderContactsView extends IFormView { }
+export interface OrderContactsViewData {
+   email: string;
+   phone: string;
+   errors: string;
+   valid: boolean;
+}
 
-export interface IOrderAddressView extends IFormView { }
+export interface IOrderAddressView extends IView<OrderAddressViewData> { }
 
-export interface IOrderSuccessView {
-   render(total: number): HTMLElement;
+export interface IOrderContactsView extends IView<OrderContactsViewData> { }
+
+export interface IOrderSuccessView extends IView<undefined> {
+   setTotal(total: number): void;
 }
 
 export interface IModalView extends IModal { }

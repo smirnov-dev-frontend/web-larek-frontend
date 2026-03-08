@@ -11,12 +11,8 @@ function formatPrice(price: number | null): string {
    return price === null ? 'Бесценно' : `${price} синапсов`;
 }
 
-function calcTotal(products: ApiProduct[]): number {
-   return products.reduce((sum, p) => sum + (p.price ?? 0), 0);
-}
-
 export class CartPresenter {
-   private isCartOpen = false;
+   private readonly basketView: BasketView;
 
    constructor(
       private readonly cartModel: ICartModel,
@@ -24,77 +20,48 @@ export class CartPresenter {
       private readonly headerBasket: HeaderBasketView,
       private readonly modal: Modal,
       private readonly events: EventEmitter
-   ) { }
+   ) {
+      const basketRoot = cloneTemplate<HTMLElement>('#basket');
+      this.basketView = new BasketView(basketRoot, this.events);
+   }
 
    init(): void {
       this.events.on(AppEvent.CART_OPEN, () => this.openCart());
       this.events.on(AppEvent.CART_ADD, (e: { productId: string }) => this.onAdd(e.productId));
       this.events.on(AppEvent.CART_REMOVE, (e: { productId: string }) => this.onRemove(e.productId));
+      this.events.on(AppEvent.CART_CLEAR, () => this.cartModel.clear());
+      this.events.on(AppEvent.CART_CHANGED, () => this.updateView());
 
-      this.events.on(AppEvent.CART_CLEAR, () => {
-         this.syncCounter();
-         if (this.isCartOpen) this.renderCartIntoModal();
-      });
-
-      this.events.on(AppEvent.MODAL_CLOSE, () => {
-         this.isCartOpen = false;
-      });
-
-      this.events.on(AppEvent.ORDER_SUBMIT, () => {
-         this.isCartOpen = false;
-      });
-
-      this.syncCounter();
+      this.updateView();
    }
 
-   private syncCounter(): void {
-      this.headerBasket.setCount(this.cartModel.getItems().length);
+   private updateView(): void {
+      this.headerBasket.setCount(this.cartModel.getCount());
+
+      const itemNodes = this.cartModel
+         .getItems()
+         .map((product, index) => this.createBasketItemNode(product, index + 1));
+
+      this.basketView.render({
+         items: itemNodes,
+         total: `${this.cartModel.getTotalPrice()} синапсов`,
+         orderEnabled: this.cartModel.getCount() > 0,
+      });
    }
 
    private onAdd(productId: string): void {
-      if (!this.productModel.getProductById(productId)) return;
+      const product = this.productModel.getProductById(productId);
+      if (!product) return;
 
-      this.cartModel.addProduct(productId);
-      this.syncCounter();
-
-      if (this.isCartOpen) this.renderCartIntoModal();
+      this.cartModel.addProduct(product);
    }
 
    private onRemove(productId: string): void {
       this.cartModel.removeProduct(productId);
-      this.syncCounter();
-
-      if (this.isCartOpen) this.renderCartIntoModal();
    }
 
    private openCart(): void {
-      this.isCartOpen = true;
-      this.renderCartIntoModal();
-   }
-
-   private renderCartIntoModal(): void {
-      const basketRoot = cloneTemplate<HTMLElement>('#basket');
-      const basket = new BasketView(basketRoot);
-
-      const ids = this.cartModel.getItems();
-
-      const products: ApiProduct[] = ids
-         .map((id) => this.productModel.getProductById(id))
-         .filter((p): p is ApiProduct => Boolean(p));
-
-      const itemNodes = products.map((p, idx) => this.createBasketItemNode(p, idx + 1));
-      basket.setItems(itemNodes);
-
-      const total = calcTotal(products);
-      basket.setTotal(`${total} синапсов`);
-
-      basket.setOrderEnabled(ids.length > 0);
-
-      basket.onOrderClick(() => {
-         this.events.emit(AppEvent.ORDER_SUBMIT, { timestamp: Date.now() });
-      });
-
-      this.modal.setContent(basket.getElement());
+      this.modal.setContent(this.basketView.render());
       this.modal.open();
    }
 

@@ -1,18 +1,21 @@
-import { PaymentMethod } from './api';
+import type { PaymentMethod } from './api';
 
 export enum AppEvent {
    PRODUCT_SELECTED = 'product:selected',
+
+   CART_OPEN = 'cart:open',
    CART_ADD = 'cart:add',
    CART_REMOVE = 'cart:remove',
    CART_CLEAR = 'cart:clear',
+   CART_CHANGED = 'cart:changed',
 
-   ORDER_CONTACTS_SUBMIT = 'order:contacts:submit',
-   ORDER_ADDRESS_SUBMIT = 'order:address:submit',
    ORDER_SUBMIT = 'order:submit',
+   ORDER_ADDRESS_SUBMIT = 'order:address:submit',
+   ORDER_CONTACTS_SUBMIT = 'order:contacts:submit',
+   ORDER_FIELD_CHANGE = 'order:field:change',
+   ORDER_CHANGED = 'order:changed',
    ORDER_SUCCESS = 'order:success',
    ORDER_SUCCESS_CLOSE = 'order:success:close',
-
-   CART_OPEN = 'cart:open',
 
    MODAL_OPEN = 'modal:open',
    MODAL_CLOSE = 'modal:close',
@@ -30,15 +33,18 @@ export interface CartRemoveEvent {
    productId: string;
 }
 
-export interface OrderContactsSubmitEvent {
-   email: string;
-   phone: string;
+export interface CartClearEvent { }
+
+export interface CartOpenEvent { }
+
+export interface OrderFieldChangeEvent {
+   field: 'payment' | 'address' | 'email' | 'phone';
+   value: PaymentMethod | string;
 }
 
-export interface OrderAddressSubmitEvent {
-   address: string;
-   payment: PaymentMethod;
-}
+export interface OrderAddressSubmitEvent { }
+
+export interface OrderContactsSubmitEvent { }
 
 export interface OrderSubmitEvent {
    timestamp?: number;
@@ -56,7 +62,3 @@ export interface ModalOpenEvent {
 export interface ModalCloseEvent {
    reason?: string;
 }
-
-export interface CartOpenEvent { }
-
-export interface CartClearEvent { }

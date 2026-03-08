@@ -54,8 +54,4 @@ export class ProductCardView extends Component<ProductCardViewData> {
    setSelected(selected: boolean): void {
       this.container.classList.toggle('card_selected', selected);
    }
-
-   override render(data?: Partial<ProductCardViewData>): HTMLElement {
-      return super.render(data);
-   }
 }

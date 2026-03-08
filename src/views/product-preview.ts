@@ -81,10 +81,6 @@ export class ProductPreviewView extends Component<ProductPreviewData> {
       this.actionBtn.textContent = value ? 'Убрать' : 'Купить';
    }
 
-   override render(data?: Partial<ProductPreviewData>): HTMLElement {
-      return super.render(data);
-   }
-
    static fromProduct(product: ApiProduct, isInCart: boolean): ProductPreviewData {
       return {
          id: product.id,

@@ -1,6 +1,6 @@
 import { EventEmitter } from '../components/base/Events';
 import { cloneTemplate } from '../utils/utils';
-import type { IProductModel, IProductListView, ApiProduct } from '../types';
+import type { ICartModel, IProductModel, IProductListView, ApiProduct } from '../types';
 import { AppEvent } from '../types';
 import { ProductCardView } from '../views/product-card';
 import { ProductPreviewView } from '../views/product-preview';
@@ -13,32 +13,26 @@ function formatPrice(price: number | null): string {
 type CardWithMedia = ProductCardView & { category: string; image: string };
 
 export class CatalogPresenter {
-   private cards: Map<string, ProductCardView> = new Map();
-   private cartIds: Set<string> = new Set();
-
    constructor(
       private readonly productModel: IProductModel,
+      private readonly cartModel: ICartModel,
       private readonly productListView: IProductListView,
       private readonly modal: Modal,
       private readonly events: EventEmitter
    ) { }
 
    init(): void {
-      this.events.on(AppEvent.PRODUCT_SELECTED, (e: { productId: string }) => this.openPreview(e.productId));
-
-      this.events.on(AppEvent.CART_ADD, (e: { productId: string }) => {
-         this.cartIds.add(e.productId);
-         this.updateCardState(e.productId);
+      this.events.on(AppEvent.PRODUCT_SELECTED, (e: { productId: string }) => {
+         this.productModel.setSelectedProduct(e.productId);
+         this.openPreview();
       });
 
-      this.events.on(AppEvent.CART_REMOVE, (e: { productId: string }) => {
-         this.cartIds.delete(e.productId);
-         this.updateCardState(e.productId);
-      });
-
-      this.events.on(AppEvent.CART_CLEAR, () => {
-         this.cartIds.clear();
+      this.events.on(AppEvent.CART_CHANGED, () => {
          this.renderCatalog();
+      });
+
+      this.events.on(AppEvent.MODAL_CLOSE, () => {
+         this.productModel.clearSelectedProduct();
       });
 
       void this.bootstrap();
@@ -51,17 +45,8 @@ export class CatalogPresenter {
 
    private renderCatalog(): void {
       const products = this.productModel.getProducts();
-      const nodes = products.map((p) => this.createCardNode(p));
+      const nodes = products.map((product) => this.createCardNode(product));
       this.productListView.render(nodes);
-   }
-
-   private updateCardState(productId: string): void {
-      const card = this.cards.get(productId);
-      if (!card) return;
-
-      card.render({
-         isInCart: this.cartIds.has(productId),
-      } as unknown as Partial<unknown>);
    }
 
    private createCardNode(product: ApiProduct): HTMLElement {
@@ -76,15 +61,14 @@ export class CatalogPresenter {
          id: product.id,
          title: product.title,
          price: formatPrice(product.price),
-         isInCart: this.cartIds.has(product.id),
+         isInCart: this.cartModel.hasProduct(product.id),
       });
 
-      this.cards.set(product.id, card);
       return node;
    }
 
-   private openPreview(productId: string): void {
-      const product = this.productModel.getProductById(productId);
+   private openPreview(): void {
+      const product = this.productModel.getSelectedProduct();
       if (!product) return;
 
       const node = cloneTemplate<HTMLElement>('#card-preview');
@@ -93,7 +77,7 @@ export class CatalogPresenter {
       preview.render(
          ProductPreviewView.fromProduct(
             product,
-            this.cartIds.has(productId)
+            this.cartModel.hasProduct(product.id)
          )
       );
 

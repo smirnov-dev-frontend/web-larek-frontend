@@ -1,12 +1,15 @@
+import { Component } from '../components/base/Component';
 import { EventEmitter } from '../components/base/Events';
 import { ensureElement } from '../utils/utils';
 import { AppEvent } from '../types';
 
-export class OrderSuccessView {
+export class OrderSuccessView extends Component<undefined> {
    private readonly descEl: HTMLElement;
    private readonly closeBtn: HTMLButtonElement;
 
-   constructor(private readonly container: HTMLElement, private readonly events: EventEmitter) {
+   constructor(container: HTMLElement, private readonly events: EventEmitter) {
+      super(container);
+
       this.descEl = ensureElement<HTMLElement>('.order-success__description', container);
       this.closeBtn = ensureElement<HTMLButtonElement>('.order-success__close', container);
 
@@ -17,9 +20,5 @@ export class OrderSuccessView {
 
    setTotal(total: number): void {
       this.descEl.textContent = `Списано ${total} синапсов`;
-   }
-
-   getElement(): HTMLElement {
-      return this.container;
    }
 }

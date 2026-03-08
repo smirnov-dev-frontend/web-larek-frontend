@@ -32,15 +32,13 @@ const modalRoot = mustGetElement<HTMLElement>('#modal-container');
 const pageRoot = document.body;
 
 const productModel = new ProductModel(apiClient);
-const cartModel = new CartModel();
-const orderModel = new OrderModel(apiClient);
+const cartModel = new CartModel(events);
+const orderModel = new OrderModel(events);
 
 const productListView = new ProductListView(gallery);
 const modal = new Modal(modalRoot, events);
 const headerBasket = new HeaderBasketView(pageRoot, events);
 
 new CartPresenter(cartModel, productModel, headerBasket, modal, events).init();
-
-new CatalogPresenter(productModel, productListView, modal, events).init();
-
-new OrderPresenter(orderModel, cartModel, productModel, modal, events).init();
+new CatalogPresenter(productModel, cartModel, productListView, modal, events).init();
+new OrderPresenter(orderModel, cartModel, apiClient, modal, events).init();
