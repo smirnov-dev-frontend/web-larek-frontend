@@ -207,7 +207,7 @@ products: ApiProduct[] - список загруженных товаров;
 
 selectedProductId: string | null - id выбранного товара;
 
-apiClient: IApiClient - клиент API для загрузки каталога.
+apiClient: IApiClient - клиент API, передаваемый через конструктор модели.
 
 Методы
 
@@ -241,7 +241,7 @@ clearSelectedProduct(): void - очистить выбранный товар.
 
 items: ApiProduct[] - список товаров в корзине;
 
-events: EventEmitter - брокер событий.
+events: EventEmitter - используется для генерации событий интерфейса.
 
 Методы
 
