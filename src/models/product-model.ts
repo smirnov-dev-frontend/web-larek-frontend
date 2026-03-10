@@ -1,19 +1,16 @@
-import type { IApiClient, IProductModel, ApiProduct } from '../types';
+import type { EventEmitter } from '../components/base/Events';
+import type { IProductModel, ApiProduct } from '../types';
+import { AppEvent } from '../types';
 
 export class ProductModel implements IProductModel {
    private products: ApiProduct[] = [];
-   private selectedProductId: string | null = null;
+   private selectedProduct: ApiProduct | null = null;
 
-   constructor(private readonly apiClient: IApiClient) { }
+   constructor(private readonly events: EventEmitter) { }
 
-   async loadProducts(): Promise<void> {
-      try {
-         this.products = await this.apiClient.getProducts();
-      } catch (error) {
-         throw new Error(
-            error instanceof Error ? error.message : 'Не удалось загрузить каталог товаров'
-         );
-      }
+   setProducts(products: ApiProduct[]): void {
+      this.products = products;
+      this.events.emit(AppEvent.CATALOG_CHANGED, {});
    }
 
    getProducts(): readonly ApiProduct[] {
@@ -24,16 +21,15 @@ export class ProductModel implements IProductModel {
       return this.products.find((product) => product.id === id);
    }
 
-   setSelectedProduct(productId: string): void {
-      this.selectedProductId = productId;
+   setSelectedProduct(product: ApiProduct): void {
+      this.selectedProduct = product;
    }
 
    getSelectedProduct(): ApiProduct | undefined {
-      if (!this.selectedProductId) return undefined;
-      return this.getProductById(this.selectedProductId);
+      return this.selectedProduct ?? undefined;
    }
 
    clearSelectedProduct(): void {
-      this.selectedProductId = null;
+      this.selectedProduct = null;
    }
 }

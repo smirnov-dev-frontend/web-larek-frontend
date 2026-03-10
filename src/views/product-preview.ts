@@ -1,28 +1,21 @@
 import { Component } from '../components/base/Component';
 import { EventEmitter } from '../components/base/Events';
 import { CDN_URL, categoryMap } from '../utils/constants';
-import { ensureElement } from '../utils/utils';
+import { ensureElement, formatPrice } from '../utils/utils';
 import type { ApiProduct } from '../types';
 import { AppEvent } from '../types';
 
 export type ProductPreviewData = {
-   id: string;
    title: string;
    description: string;
    priceText: string;
    image: string;
    category: string;
-   isInCart: boolean;
+   buttonText: string;
+   buttonDisabled: boolean;
 };
 
-function formatPrice(price: number | null): string {
-   return price === null ? 'Бесценно' : `${price} синапсов`;
-}
-
 export class ProductPreviewView extends Component<ProductPreviewData> {
-   private id = '';
-   private inCart = false;
-
    private readonly titleEl: HTMLElement;
    private readonly priceEl: HTMLElement;
    private readonly imageEl: HTMLImageElement;
@@ -41,15 +34,7 @@ export class ProductPreviewView extends Component<ProductPreviewData> {
       this.actionBtn = ensureElement<HTMLButtonElement>('.card__button', container);
 
       this.actionBtn.addEventListener('click', () => {
-         if (!this.id) return;
-
-         if (this.inCart) {
-            this.events.emit(AppEvent.CART_REMOVE, { productId: this.id });
-            this.isInCart = false;
-         } else {
-            this.events.emit(AppEvent.CART_ADD, { productId: this.id });
-            this.isInCart = true;
-         }
+         this.events.emit(AppEvent.PREVIEW_TOGGLE, {});
       });
    }
 
@@ -72,24 +57,31 @@ export class ProductPreviewView extends Component<ProductPreviewData> {
 
    set category(value: string) {
       this.categoryEl.textContent = value;
-      const mod = categoryMap[value] ?? categoryMap['другое'];
+      const mod = categoryMap[value as keyof typeof categoryMap] ?? categoryMap['другое'];
       this.categoryEl.className = `card__category ${mod}`;
    }
 
-   set isInCart(value: boolean) {
-      this.inCart = value;
-      this.actionBtn.textContent = value ? 'Убрать' : 'Купить';
+   set buttonText(value: string) {
+      this.actionBtn.textContent = value;
    }
 
-   static fromProduct(product: ApiProduct, isInCart: boolean): ProductPreviewData {
+   set buttonDisabled(value: boolean) {
+      this.actionBtn.disabled = value;
+   }
+
+   static fromProduct(
+      product: ApiProduct,
+      buttonText: string,
+      buttonDisabled: boolean
+   ): ProductPreviewData {
       return {
-         id: product.id,
          title: product.title,
          description: product.description,
          priceText: formatPrice(product.price),
          image: product.image,
          category: product.category,
-         isInCart,
+         buttonText,
+         buttonDisabled,
       };
    }
 }

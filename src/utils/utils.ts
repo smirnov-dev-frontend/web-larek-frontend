@@ -10,6 +10,10 @@ export function isEmpty(value: unknown): boolean {
     return value === null || value === undefined;
 }
 
+export function formatPrice(price: number | null): string {
+    return price === null ? 'Бесценно' : `${price} синапсов`;
+}
+
 export type SelectorCollection<T> = string | NodeListOf<Element> | T[];
 
 export function ensureAllElements<T extends HTMLElement>(

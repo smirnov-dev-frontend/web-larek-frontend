@@ -38,12 +38,9 @@ export class OrderContactsView extends Component<OrderContactsViewData> {
       });
 
       this.phoneInput.addEventListener('input', () => {
-         const masked = this.applyPhoneMask(this.phoneInput.value);
-         this.phoneInput.value = masked;
-
          this.events.emit(AppEvent.ORDER_FIELD_CHANGE, {
             field: 'phone',
-            value: masked,
+            value: this.phoneInput.value,
          });
       });
 
@@ -88,7 +85,7 @@ export class OrderContactsView extends Component<OrderContactsViewData> {
    }
 
    set phone(value: string) {
-      this.phoneInput.value = value;
+      this.phoneInput.value = this.applyPhoneMask(value);
    }
 
    set errors(value: string) {

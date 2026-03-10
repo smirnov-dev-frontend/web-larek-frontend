@@ -64,663 +64,674 @@ npm run build
 
 ## Общий подход
 
-Проект разделён на слои:
+Проект реализован по паттерну **MVP (Model–View–Presenter)**.
 
-Model - состояние и бизнес-логика приложения.
+Архитектура разделена на четыре уровня:
 
-View - отображение и работа с DOM.
+- **Model** — хранение состояния приложения и работа с данными;
+- **View** — отображение интерфейса и работа с DOM;
+- **Presenter** — координация сценариев приложения, связывание моделей и представлений;
+- **Infrastructure** — базовые классы, API-клиент, брокер событий, константы и утилиты.
 
-Presenter - сценарии пользовательского взаимодействия и связывание моделей с представлениями.
+Взаимодействие между слоями построено через брокер событий `EventEmitter`.  
+Модели хранят и изменяют данные, представления только отображают текущее состояние интерфейса и генерируют пользовательские события, а презентеры подписываются на эти события и управляют сценарием работы приложения.
 
-Infrastructure - базовые классы, клиент API, константы и утилиты.
+Особенности текущей архитектуры проекта:
 
-Взаимодействие между слоями построено через брокер событий `EventEmitter`.
-Модели хранят и изменяют данные, представления отвечают только за DOM, презентеры подписываются на события и координируют работу приложения.
+- запросы к серверу выполняются в слое `Presenter`, а не в моделях;
+- модели не зависят от API-клиента и отвечают только за хранение и модификацию данных;
+- представления не используются как источник данных и не хранят предметное состояние приложения;
+- экземпляры основных классов создаются в `main.ts` и передаются через конструкторы, что уменьшает связанность модулей;
+- повторяющаяся логика вынесена в базовые классы и утилиты.
 
 ---
 
 # Infrastructure
 
-## EventEmitter (src/components/base/Events.ts)
+## EventEmitter (`src/components/base/Events.ts`)
 
 Класс `EventEmitter` реализует брокер событий приложения.
 
-Назначение
+### Назначение
 
 - централизует обмен событиями между слоями приложения;
 - позволяет избежать прямых зависимостей между классами;
-- реализует паттерн Publisher–Subscriber.
+- реализует паттерн `Publisher–Subscriber`;
+- используется как единый механизм уведомления об изменении данных и пользовательских действиях.
 
-Поля
+### Поля
 
-`events: Map<EventName, Set<Subscriber>>` - хранилище подписчиков по именам событий.
+`events: Map<EventName, Set<Subscriber>>` — хранилище подписчиков по именам событий.
 
-Методы
+### Методы
 
-- `on(eventName, callback)` - подписка на событие;
-- `off(eventName, callback)` - отписка от события;
-- `emit(eventName, payload?)` - генерация события;
-- `trigger(eventName, context?)` - создание функции-триггера;
-- `onAll(callback)` - подписка на все события;
-- `offAll()` - очистка всех подписчиков.
+- `on(eventName, callback)` — подписка на событие;
+- `off(eventName, callback)` — отписка от события;
+- `emit(eventName, payload?)` — генерация события;
+- `trigger(eventName, context?)` — создание функции-триггера;
+- `onAll(callback)` — подписка на все события;
+- `offAll()` — очистка всех подписчиков.
 
 ---
 
-## Api (src/components/base/Api.ts)
+## Api (`src/components/base/Api.ts`)
 
 Базовый HTTP-класс для работы с сервером.
 
-Назначение
+### Назначение
 
 - выполняет `GET` и `POST` запросы;
 - централизует обработку ответов и ошибок;
-- является низкоуровневой обёрткой над `fetch`.
+- является низкоуровневой обёрткой над `fetch`;
+- служит инфраструктурной основой для прикладного API-клиента.
 
-Поля
+### Поля
 
-`baseUrl: string` - базовый адрес API;
+`baseUrl: string` — базовый адрес API.
 
-`options: RequestInit` - базовые параметры запросов.
+`options: RequestInit` — базовые параметры запросов.
 
-Методы
+### Методы
 
-`get<T>(uri: string): Promise<T>` - выполнение GET-запроса;
-
-`post<T>(uri: string, data: unknown, method?)` - выполнение `POST/PUT/DELETE`-запроса;
-
-`handleResponse<T>(response: Response): Promise<T>` - обработка ответа сервера.
+- `get<T>(uri: string): Promise<T>` — выполнение `GET`-запроса;
+- `post<T>(uri: string, data: unknown, method?)` — выполнение `POST/PUT/DELETE`-запроса;
+- `handleResponse<T>(response: Response): Promise<T>` — обработка ответа сервера.
 
 ---
 
-## Component (src/components/base/Component.ts)
+## Component (`src/components/base/Component.ts`)
 
 Базовый класс представлений.
 
-Назначение
+### Назначение
 
-- задаёт общий интерфейс рендера UI-компонентов;
+- задаёт единый механизм рендера данных в DOM;
 - позволяет переиспользовать общую логику отображения;
-- служит базой для представлений каталога, корзины, заказа и модальных окон.
+- служит базой для конкретных UI-компонентов проекта.
 
-Поля
+### Поля
 
-`container: HTMLElement` - корневой DOM-элемент компонента.
+`container: HTMLElement` — корневой DOM-элемент компонента.
 
-Методы
+### Методы
 
-`render(data?: Partial<T>)`: HTMLElement - рендер данных в DOM;
-
-`setImage(element, src, alt?)` - установка изображения.
+- `render(data?: Partial<T>): HTMLElement` — применяет переданные данные к компоненту через сеттеры и возвращает корневой элемент;
+- `setImage(element, src, alt?)` — вспомогательный метод для установки изображения.
 
 ---
 
-## LarekApiClient (src/services/larek-api-client.ts)
+## LarekApiClient (`src/services/larek-api-client.ts`)
 
-Класс прикладного API-клиента.
+Прикладной API-клиент проекта.
 
-Назначение
+### Назначение
 
 - работает с конкретными методами API проекта;
 - получает каталог товаров;
 - отправляет заказ на сервер.
 
-Поля
+### Поля
 
-`api: Api` - экземпляр базового API-класса.
+`api: Api` — экземпляр базового API-класса.
 
-Методы
+### Методы
 
-`getProducts(): Promise<ApiProduct[]>`
-
-`createOrder(data: ApiOrderRequest): Promise<ApiOrderResponse>`
+- `getProducts(): Promise<ApiProduct[]>` — получить каталог товаров;
+- `createOrder(data: ApiOrderRequest): Promise<ApiOrderResponse>` — отправить заказ.
 
 ---
 
-## Константы (src/utils/constants.ts)
+## Константы (`src/utils/constants.ts`)
 
 В файле содержатся константы приложения:
 
-`API_URL` - адрес API;
+- `API_URL` — адрес API;
+- `CDN_URL` — адрес CDN для изображений;
+- `categoryMap` — карта соответствия категории и CSS-класса карточки.
 
-`CDN_URL` - адрес CDN для изображений;
+---
 
-`categoryMap` - карта соответствия категории и CSS-класса.
+## Утилиты (`src/utils/utils.ts`)
+
+Файл содержит набор переиспользуемых вспомогательных функций.
+
+### Назначение
+
+- работа с DOM-элементами;
+- клонирование шаблонов;
+- форматирование данных для отображения;
+- общие служебные операции.
+
+### Ключевые функции
+
+- `ensureElement()` — безопасный поиск DOM-элемента;
+- `ensureAllElements()` — получение списка DOM-элементов;
+- `cloneTemplate()` — клонирование содержимого `template`;
+- `formatPrice(price)` — форматирование стоимости товара;
+- `createElement()` — создание DOM-элемента программно.
 
 ---
 
 # Model
 
-## ProductModel (src/models/product-model.ts)
+## ProductModel (`src/models/product-model.ts`)
 
 Модель каталога товаров.
 
-Назначение
+### Назначение
 
-- загружает список товаров с сервера;
 - хранит каталог товаров;
 - хранит текущий выбранный товар;
-- предоставляет методы доступа к каталогу.
+- предоставляет методы доступа к каталогу;
+- уведомляет приложение об обновлении каталога.
 
-Поля
+### Поля
 
-`products: ApiProduct[]` - список загруженных товаров;
+`products: ApiProduct[]` — список загруженных товаров.
 
-`selectedProductId: string | null` - id выбранного товара;
+`selectedProduct: ApiProduct | null` — текущий выбранный товар.
 
-`apiClient: IApiClient` - клиент API, передаваемый через конструктор модели.
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы
 
-`loadProducts(): Promise<void>` - загрузка каталога;
+- `setProducts(products: ApiProduct[]): void` — записывает список товаров в модель и генерирует событие `catalog:changed`;
+- `getProducts(): readonly ApiProduct[]` — возвращает список товаров;
+- `getProductById(id: string): ApiProduct | undefined` — возвращает товар по идентификатору;
+- `setSelectedProduct(product: ApiProduct): void` — устанавливает выбранный товар;
+- `getSelectedProduct(): ApiProduct | undefined` — возвращает выбранный товар;
+- `clearSelectedProduct(): void` — очищает выбранный товар.
 
-`getProducts(): readonly ApiProduct[]` - получить список товаров;
+### События модели
 
-`getProductById(id: string): ApiProduct | undefined` - получить товар по id;
-
-`setSelectedProduct(productId: string): void` - установить выбранный товар;
-
-`getSelectedProduct(): ApiProduct | undefined` - получить выбранный товар;
-
-`clearSelectedProduct(): void` - очистить выбранный товар.
+При записи каталога модель генерирует событие `catalog:changed`.
 
 ---
 
-## CartModel (src/models/cart-model.ts)
+## CartModel (`src/models/cart-model.ts`)
 
 Модель корзины.
 
-Назначение
+### Назначение
 
 - хранит товары, добавленные в корзину;
 - управляет добавлением и удалением товаров;
-- считает общую стоимость;
-- считает количество товаров;
-- оповещает приложение об изменении корзины.
+- рассчитывает общую стоимость корзины;
+- рассчитывает количество товаров;
+- уведомляет приложение об изменении корзины.
 
-Поля
+### Поля
 
-`items: ApiProduct[]` - список товаров в корзине;
+`items: ApiProduct[]` — список товаров в корзине.
 
-`events: EventEmitter` - используется для генерации событий интерфейса.
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы
 
-`addProduct(product: ApiProduct): void` - добавить товар в корзину;
+- `addProduct(product: ApiProduct): void` — добавить товар в корзину;
+- `removeProduct(productId: string): void` — удалить товар из корзины;
+- `hasProduct(productId: string): boolean` — проверить наличие товара в корзине;
+- `getItems(): readonly ApiProduct[]` — получить список товаров корзины;
+- `getTotalPrice(): number` — получить итоговую стоимость;
+- `getCount(): number` — получить количество товаров;
+- `clear(): void` — очистить корзину.
 
-`removeProduct(productId: string): void` - удалить товар из корзины;
-
-`hasProduct(productId: string): boolean` - проверить наличие товара;
-
-`getItems(): readonly ApiProduct[]` - получить список товаров;
-
-`getTotalPrice(): number` - получить общую стоимость корзины;
-
-`getCount(): number` - получить количество товаров;
-
-`clear(): void` - очистить корзину.
+### События модели
 
 При изменении корзины модель генерирует событие `cart:changed`.
 
 ---
 
-## OrderModel (src/models/order-model.ts)
+## OrderModel (`src/models/order-model.ts`)
 
 Модель данных заказа.
 
-Назначение
+### Назначение
 
 - хранит состояние формы заказа;
-- обновляет поля заказа;
+- обновляет поля формы;
 - выполняет валидацию данных;
 - предоставляет текущее состояние формы презентеру.
 
-Поля
+### Поля
 
-`data: OrderFormData` - данные формы заказа;
+`data: OrderFormData` — данные формы заказа.
 
-`events: EventEmitter` - брокер событий.
+`events: EventEmitter` — брокер событий.
 
-Поля `data`
+### Поля объекта `data`
 
-`payment: PaymentMethod | null` - способ оплаты;
+- `payment: PaymentMethod | null` — выбранный способ оплаты;
+- `address: string` — адрес доставки;
+- `email: string` — email пользователя;
+- `phone: string` — телефон пользователя.
 
-`address: string` - адрес доставки;
+### Методы
 
-`email: string` - email пользователя;
+- `setField(field, value): void` — обновить одно поле формы;
+- `getData(): OrderFormData` — получить текущее состояние формы;
+- `validate(): OrderValidationErrors` — получить объект ошибок валидации;
+- `clear(): void` — очистить форму заказа.
 
-`phone: string` - телефон пользователя.
+### События модели
 
-Методы
-
-`setField(field, value): void` - обновить поле формы;
-
-`getData(): OrderFormData` - получить текущее состояние формы;
-
-`validate(): OrderValidationErrors` - получить объект ошибок валидации;
-
-`clear(): void` - очистить форму заказа.
-
-При изменении данных модель генерирует событие `order:changed`.
+При изменении данных заказа модель генерирует событие `order:changed`.
 
 ---
 
 # View
 
-## Modal (src/views/modal.ts)
+## Modal (`src/views/modal.ts`)
 
 Класс модального окна.
 
-Назначение
+### Назначение
 
-- показывает контент в модальном окне;
-- закрывает модалку по клику на крестик и по клику на overlay;
-- эмитит события открытия и закрытия.
+- показывает произвольный контент в модальном окне;
+- закрывает окно по клику на крестик;
+- закрывает окно по клику на overlay;
+- генерирует события открытия и закрытия.
 
-Поля
+### Поля
 
-`closeButton: HTMLButtonElement` - кнопка закрытия;
+`closeButton: HTMLButtonElement` — кнопка закрытия.
 
-`content: HTMLElement` - контейнер содержимого;
+`content: HTMLElement` — контейнер содержимого модального окна.
 
-`events: EventEmitter` - брокер событий.
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы
 
-`setContent(node: HTMLElement | string): void` - установить содержимое модалки;
-
-`open(): void` - открыть модалку;
-
-`close(): void` - закрыть модалку.
+- `setContent(node: HTMLElement | string): void` — установить содержимое модального окна;
+- `open(): void` — открыть модальное окно;
+- `close(): void` — закрыть модальное окно.
 
 ---
 
-## ProductListView (src/views/product-list.ts)
+## ProductListView (`src/views/product-list.ts`)
 
 Представление списка товаров.
 
-Назначение
+### Назначение
 
-размещает готовые карточки товаров в контейнере каталога.
+- размещает готовые карточки товаров в контейнере каталога;
+- отвечает только за вставку разметки списка в DOM.
 
-Поля
+### Поля
 
-`container: HTMLElement` - контейнер списка товаров.
+`container: HTMLElement` — контейнер списка товаров.
 
-Методы
+### Методы и сеттеры
 
-`render(items: HTMLElement[]): HTMLElement` - отрисовать список карточек.
+- `set items(items: HTMLElement[])` — обновляет разметку списка товаров;
+- `render()` — возвращает корневой контейнер компонента.
 
 ---
 
-## ProductCardView (src/views/product-card.ts)
+## ProductCardView (`src/views/product-card.ts`)
 
 Представление карточки товара в каталоге.
 
-Назначение
+### Назначение
 
 - отображает краткую информацию о товаре;
-- генерирует событие выбора товара.
+- показывает название, цену, изображение и категорию;
+- реагирует на клик по карточке через callback, переданный извне.
 
-Поля
+### Поля
 
-`id: string` - идентификатор товара;
+`titleEl: HTMLElement` — элемент названия товара.
 
-`titleEl: HTMLElement` - элемент названия;
+`priceEl: HTMLElement` — элемент стоимости.
 
-`priceEl: HTMLElement` - элемент цены;
+`imageEl: HTMLImageElement` — элемент изображения.
 
-`imageEl: HTMLImageElement` - элемент изображения;
+`categoryEl: HTMLElement` — элемент категории.
 
-`categoryEl: HTMLElement` - элемент категории;
+### Методы и сеттеры
 
-`events: EventEmitter` - брокер событий.
-
-Методы
-
-`сеттер category` - обновляет категорию;
-
-`сеттер image` - обновляет изображение;
-
-`сеттер title` - обновляет заголовок;
-
-`сеттер price` - обновляет цену;
-
-`сеттер isInCart` - обновляет состояние товара в корзине;
-
-`setSelected(selected: boolean): void` - выделение карточки.
+- `set category(value)` — обновляет категорию и CSS-модификатор;
+- `set image(value)` — обновляет изображение товара;
+- `set title(value)` — обновляет название товара;
+- `set price(value)` — обновляет стоимость;
+- `set isInCart(value)` — обновляет визуальное состояние карточки, если товар в корзине;
+- `setSelected(selected: boolean): void` — выделение карточки.
 
 ---
 
-## ProductPreviewView (src/views/product-preview.ts)
+## ProductPreviewView (`src/views/product-preview.ts`)
 
 Представление детальной карточки товара.
 
-Назначение
+### Назначение
 
-- отображает полную информацию о товаре;
-- позволяет добавить товар в корзину или удалить его из корзины.
+- отображает полную информацию о товаре в модальном окне;
+- показывает состояние основной кнопки действия;
+- не хранит состояние корзины и не хранит `id` товара;
+- генерирует событие `preview:toggle` по клику на кнопку действия.
 
-Поля
+### Поля
 
-`id: string` - идентификатор товара;
+`titleEl: HTMLElement` — заголовок товара.
 
-`inCart: boolean` - локальное UI-состояние кнопки;
+`priceEl: HTMLElement` — стоимость товара.
 
-`titleEl, priceEl, imageEl, categoryEl, descEl, actionBtn` - DOM-элементы карточки;
+`imageEl: HTMLImageElement` — изображение товара.
 
-`events: EventEmitter` - брокер событий.
+`categoryEl: HTMLElement` — категория товара.
 
-Методы
+`descEl: HTMLElement` — описание товара.
 
-`сеттеры title, description, priceText, image, category, isInCart`;
+`actionBtn: HTMLButtonElement` — кнопка действия.
 
-`fromProduct(product, isInCart)` - создание объекта данных для рендера.
+`events: EventEmitter` — брокер событий.
+
+### Методы и сеттеры
+
+- `set title(value)` — обновить заголовок;
+- `set description(value)` — обновить описание;
+- `set priceText(value)` — обновить текст цены;
+- `set image(value)` — обновить изображение;
+- `set category(value)` — обновить категорию;
+- `set buttonText(value)` — обновить текст кнопки;
+- `set buttonDisabled(value)` — включить или выключить кнопку;
+- `fromProduct(product, buttonText, buttonDisabled)` — сформировать объект данных для рендера превью.
 
 ---
 
-## BasketView (src/views/basket.ts)
+## BasketView (`src/views/basket.ts`)
 
 Представление корзины.
 
-Назначение
+### Назначение
 
-- отображает список товаров в корзине;
+- отображает список товаров корзины;
 - отображает итоговую стоимость;
-- управляет кнопкой оформления заказа.
+- управляет кнопкой перехода к оформлению заказа;
+- генерирует событие оформления заказа по нажатию кнопки.
 
-Поля
+### Поля
 
-`list: HTMLElement` - контейнер списка товаров;
+`list: HTMLElement` — контейнер списка товаров.
 
-`totalEl: HTMLElement` - элемент общей стоимости;
+`totalEl: HTMLElement` — элемент общей стоимости.
 
-`orderButton: HTMLButtonElement` - кнопка оформления;
+`orderButton: HTMLButtonElement` — кнопка оформления заказа.
 
-`events: EventEmitter` - брокер событий.
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы и сеттеры
 
-`сеттер items` - обновить список товаров;
-
-`сеттер total` - обновить итоговую стоимость;
-
-`сеттер orderEnabled` - включить или выключить кнопку заказа.
+- `set items(items)` — обновить список товаров;
+- `set total(value)` — обновить итоговую стоимость;
+- `set orderEnabled(enabled)` — включить или выключить кнопку оформления.
 
 ---
 
-## BasketItemView (src/views/basket-item.ts)
+## BasketItemView (`src/views/basket-item.ts`)
 
 Представление одного товара в корзине.
 
-Назначение
+### Назначение
 
 - отображает товар в списке корзины;
-- генерирует событие удаления товара.
+- отображает индекс, название и цену;
+- вызывает callback удаления, переданный при создании.
 
-Поля
+### Поля
 
-`_productId: string` - id товара;
+`indexEl: HTMLElement` — элемент индекса товара в корзине.
 
-`indexEl, titleEl, priceEl, deleteBtn` - DOM-элементы;
+`titleEl: HTMLElement` — элемент названия товара.
 
-`events: EventEmitter` - брокер событий.
+`priceEl: HTMLElement` — элемент стоимости.
 
-Методы
+`deleteBtn: HTMLButtonElement` — кнопка удаления.
 
-`сеттер index`
+### Методы и сеттеры
 
-`сеттер title`
-
-`сеттер priceText`
-
-`сеттер productId`
+- `set index(value)` — обновить индекс;
+- `set title(value)` — обновить название;
+- `set priceText(value)` — обновить стоимость.
 
 ---
 
-## HeaderBasketView (src/views/header-basket.ts)
+## HeaderBasketView (`src/views/header-basket.ts`)
 
 Представление кнопки корзины в шапке.
 
-Назначение
+### Назначение
 
 - отображает счётчик товаров;
-- открывает корзину по клику.
+- открывает корзину по клику на кнопку.
 
-Поля
+### Поля
 
-`button: HTMLButtonElement` - кнопка корзины;
+`button: HTMLButtonElement` — кнопка корзины.
 
-`counter: HTMLElement` - счётчик товаров;
+`counter: HTMLElement` — элемент счётчика.
 
-`events: EventEmitter` - брокер событий.
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы
 
-`setCount(count: number): void` - обновить счётчик корзины.
+- `setCount(count: number): void` — обновить значение счётчика.
 
 ---
 
-## OrderAddressView (src/views/order-address.ts)
+## OrderAddressView (`src/views/order-address.ts`)
 
-Представление первого шага заказа.
+Представление первого шага оформления заказа.
 
-Назначение
+### Назначение
 
-- отображает форму ввода адреса;
-- отображает выбор способа оплаты;
+- отображает форму выбора способа оплаты;
+- отображает поле адреса доставки;
 - генерирует события изменения полей формы;
-- отображает ошибки и состояние кнопки отправки.
+- отображает ошибки и доступность кнопки перехода на следующий шаг.
 
-Поля
+### Поля
 
-`form: HTMLFormElement`
+`form: HTMLFormElement` — форма заказа.
 
-`addressInput: HTMLInputElement`
+`addressInput: HTMLInputElement` — поле адреса.
 
-`errorEl: HTMLElement`
+`errorEl: HTMLElement` — контейнер ошибок.
 
-`submitBtn: HTMLButtonElement`
+`submitBtn: HTMLButtonElement` — кнопка перехода к следующему шагу.
 
-`payCardBtn: HTMLButtonElement`
+`payCardBtn: HTMLButtonElement` — кнопка оплаты картой.
 
-`payCashBtn: HTMLButtonElement`
+`payCashBtn: HTMLButtonElement` — кнопка оплаты при получении.
 
-`events: EventEmitter`
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы и сеттеры
 
-`сеттер payment`
-
-`сеттер address`
-
-`сеттер errors`
-
-`сеттер valid`
+- `set payment(value)` — обновить выбранный способ оплаты;
+- `set address(value)` — обновить поле адреса;
+- `set errors(value)` — показать текст ошибки;
+- `set valid(value)` — включить или выключить кнопку отправки.
 
 ---
 
-## OrderContactsView (src/views/order-contacts.ts)
+## OrderContactsView (`src/views/order-contacts.ts`)
 
-Представление второго шага заказа.
+Представление второго шага оформления заказа.
 
-Назначение
+### Назначение
 
 - отображает форму ввода email и телефона;
 - генерирует события изменения полей;
-- отображает ошибки и состояние кнопки отправки.
+- отображает ошибки формы;
+- управляет доступностью кнопки подтверждения заказа.
 
-Поля
+### Поля
 
-`form: HTMLFormElement`
+`form: HTMLFormElement` — форма контактных данных.
 
-`emailInput: HTMLInputElement`
+`emailInput: HTMLInputElement` — поле email.
 
-`phoneInput: HTMLInputElement`
+`phoneInput: HTMLInputElement` — поле телефона.
 
-`errorEl: HTMLElement`
+`errorEl: HTMLElement` — контейнер ошибок.
 
-`submitBtn: HTMLButtonElement`
+`submitBtn: HTMLButtonElement` — кнопка оплаты.
 
-`events: EventEmitter`
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы и сеттеры
 
-`applyPhoneMask(value: string): string` - форматирование телефона;
-
-`сеттер email`
-
-`сеттер phone`
-
-`сеттер errors`
-
-`сеттер valid`
+- `applyPhoneMask(value: string): string` — вспомогательный метод форматирования телефона;
+- `set email(value)` — обновить email;
+- `set phone(value)` — обновить телефон с применением маски в сеттере;
+- `set valid(value)` — включить или выключить кнопку отправки.
 
 ---
 
-## OrderSuccessView (src/views/order-success.ts)
+## OrderSuccessView (`src/views/order-success.ts`)
 
 Представление успешного оформления заказа.
 
-Назначение
+### Назначение
 
 - отображает итоговую сумму успешного заказа;
-- закрывает модальное окно по кнопке.
+- предоставляет кнопку закрытия окна успеха.
 
-Поля
+### Поля
 
-`descEl: HTMLElement` - описание успешного заказа;
+`descEl: HTMLElement` — текстовый элемент описания результата заказа.
 
-`closeBtn: HTMLButtonElement` - кнопка закрытия;
+`closeBtn: HTMLButtonElement` — кнопка закрытия.
 
-`events: EventEmitter`
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы
 
-`setTotal(total: number): void` - установить сумму заказа.
+- `setTotal(total: number): void` — установить итоговую сумму заказа.
 
 ---
 
 # Presenter
 
-## CatalogPresenter (src/presenters/catalog-presenter.ts)
+## CatalogPresenter (`src/presenters/catalog-presenter.ts`)
 
 Презентер каталога.
 
-Назначение
+### Назначение
 
-- загружает каталог товаров из модели;
-- рендерит карточки товаров;
-- открывает подробное превью товара;
-- обновляет каталог при изменении корзины.
+- получает каталог товаров через API-клиент;
+- записывает каталог в `ProductModel`;
+- рендерит список карточек товаров;
+- открывает превью выбранного товара;
+- синхронизирует превью и каталог при изменении корзины;
+- обрабатывает действие кнопки в превью товара.
 
-Поля
+### Поля
 
-`productModel: IProductModel`
+`apiClient: IApiClient` — прикладной API-клиент.
 
-`cartModel: ICartModel`
+`productModel: IProductModel` — модель каталога.
 
-`productListView: IProductListView`
+`cartModel: ICartModel` — модель корзины.
 
-`modal: Modal`
+`productListView: IProductListView` — представление списка товаров.
 
-`events: EventEmitter`
+`productPreviewView: ProductPreviewView` — представление превью товара.
 
-Методы
+`createCatalogCard: (product: ApiProduct) => HTMLElement` — фабрика карточки каталога.
 
-`init(): void `- регистрация обработчиков и первичная загрузка;
+`modal: Modal` — модальное окно.
 
-`bootstrap(): Promise<void>` - загрузка товаров;
+`events: EventEmitter` — брокер событий.
 
-`renderCatalog(): void` - рендер каталога;
+### Методы
 
-`createCardNode(product: ApiProduct): HTMLElement` - создание карточки товара;
-
-`openPreview(): void` - открытие превью выбранного товара.
+- `init(): void` — регистрация обработчиков событий;
+- `bootstrap(): Promise<void>` — загрузка товаров с сервера;
+- `renderCatalog(): void` — рендер каталога товаров;
+- `openPreview(): void` — открыть превью товара;
+- `renderPreview(): void` — обновить содержимое превью;
+- `togglePreviewProduct(): void` — добавить или удалить товар из корзины из превью;
+- `selectProduct(product: ApiProduct): void` — установить выбранный товар и открыть превью.
 
 ---
 
-## CartPresenter (src/presenters/cart-presenter.ts)
+## CartPresenter (`src/presenters/cart-presenter.ts`)
 
 Презентер корзины.
 
-Назначение
+### Назначение
 
 - реагирует на события добавления и удаления товаров;
-- синхронизирует модель корзины и её отображение;
-- открывает корзину в модальном окне;
-- обновляет счётчик товаров в шапке.
+- синхронизирует модель корзины с представлением;
+- обновляет счётчик корзины в шапке;
+- открывает корзину в модальном окне.
 
-Поля
+### Поля
 
-`basketView: BasketView`
+`cartModel: ICartModel` — модель корзины.
 
-`cartModel: ICartModel`
+`productModel: IProductModel` — модель каталога.
 
-`productModel: IProductModel`
+`headerBasket: HeaderBasketView` — представление кнопки корзины в шапке.
 
-`headerBasket: HeaderBasketView`
+`basketView: BasketView` — представление корзины.
 
-`modal: Modal`
+`createBasketItem: (product: ApiProduct, index: number) => HTMLElement` — фабрика элемента корзины.
 
-`events: EventEmitter`
+`modal: Modal` — модальное окно.
 
-Методы
+`events: EventEmitter` — брокер событий.
 
-`init(): void`
+### Методы
 
-`updateView(): void`
-
-`onAdd(productId: string): void`
-
-`onRemove(productId: string): void`
-
-`openCart(): void
-`
-`createBasketItemNode(product: ApiProduct, index: number): HTMLElement`
+- `init(): void` — регистрация обработчиков событий;
+- `updateView(): void` — синхронизация корзины и интерфейса;
+- `onAdd(productId: string): void` — добавить товар в корзину;
+- `onRemove(productId: string): void` — удалить товар из корзины;
+- `openCart(): void` — открыть модальное окно корзины.
 
 ---
 
-## OrderPresenter (src/presenters/order-presenter.ts)
+## OrderPresenter (`src/presenters/order-presenter.ts`)
 
 Презентер оформления заказа.
 
-Назначение
+### Назначение
 
-- координирует оба шага формы заказа;
-- передаёт изменения полей в OrderModel;
-- синхронизирует представления форм с состоянием модели;
+- координирует оба шага оформления заказа;
+- передаёт изменения полей формы в `OrderModel`;
+- синхронизирует состояние форм с состоянием модели;
 - собирает данные заказа и отправляет их на сервер;
-- очищает корзину и форму после успешного заказа.
+- показывает окно успешного оформления;
+- очищает корзину и форму после завершения заказа.
 
-Поля
+### Поля
 
-`addressView: OrderAddressView`
+`orderModel: IOrderModel` — модель формы заказа.
 
-`contactsView: OrderContactsView`
+`cartModel: ICartModel` — модель корзины.
 
-`successView: OrderSuccessView`
+`apiClient: IApiClient` — клиент API для отправки заказа.
 
-`orderModel: IOrderModel`
+`addressView: OrderAddressView` — представление первого шага заказа.
 
-`cartModel: ICartModel`
+`contactsView: OrderContactsView` — представление второго шага заказа.
 
-`apiClient: IApiClient`
+`successView: OrderSuccessView` — представление успешного оформления.
 
-`modal: Modal`
+`modal: Modal` — модальное окно.
 
-`events: EventEmitter`
+`events: EventEmitter` — брокер событий.
 
-Методы
+### Методы
 
-`init(): void`
-
-`syncViews(): void`
-
-`openAddressStep(): void`
-
-`openContactsStep(): void`
-
-`pay(): Promise<void>`
+- `init(): void` — регистрация обработчиков событий;
+- `syncViews(): void` — синхронизация состояния форм с данными модели;
+- `openAddressStep(): void` — открыть первый шаг оформления;
+- `openContactsStep(): void` — открыть второй шаг оформления;
+- `pay(): Promise<void>` — отправить заказ и показать экран успеха.
 
 ---
 
@@ -728,86 +739,58 @@ Infrastructure - базовые классы, клиент API, констант
 
 Основные события приложения:
 
-`product:selected` - выбор товара
-
-`cart:open` - открытие корзины
-
-`cart:add` - добавление товара в корзину
-
-`cart:remove` - удаление товара из корзины
-
-`cart:clear` - очистка корзины
-
-`cart:changed` - изменение корзины
-
-`order:submit` - начало оформления заказа
-
-`order:field:change` - изменение поля заказа
-
-`order:changed` - изменение данных заказа
-
-`order:address:submit` - подтверждение первого шага заказа
-
-`order:contacts:submit` - подтверждение второго шага заказа
-
-`order:success:close` - закрытие окна успешного заказа
-
-`modal:open` - открытие модального окна
-
-`modal:close` - закрытие модального окна
+- `catalog:changed` — каталог товаров обновлён в модели;
+- `preview:toggle` — нажатие на кнопку действия в превью товара;
+- `cart:open` — открытие корзины;
+- `cart:add` — добавление товара в корзину;
+- `cart:remove` — удаление товара из корзины;
+- `cart:clear` — очистка корзины;
+- `cart:changed` — состояние корзины изменено;
+- `order:submit` — начало оформления заказа;
+- `order:field:change` — изменение поля формы заказа;
+- `order:changed` — данные заказа обновлены;
+- `order:address:submit` — подтверждение первого шага заказа;
+- `order:contacts:submit` — подтверждение второго шага заказа;
+- `order:success:close` — закрытие окна успешного заказа;
+- `modal:open` — открытие модального окна;
+- `modal:close` — закрытие модального окна.
 
 ---
 
 # Типы данных
 
-Все типы и интерфейсы описаны в папке src/types.
+Все типы и интерфейсы описаны в папке `src/types`.
 
-Основные типы API
+## Основные типы API
 
-`ApiProduct` - товар, полученный с сервера;
+- `ApiProduct` — товар, полученный с сервера;
+- `ApiOrderRequest` — тело запроса на создание заказа;
+- `ApiOrderResponse` — ответ сервера при успешном создании заказа;
+- `PaymentMethod` — способ оплаты (`card | cash`).
 
-`ApiOrderRequest` - тело запроса на создание заказа;
+## Контракты моделей
 
-`ApiOrderResponse` - ответ сервера при успешном заказе;
+- `IProductModel`
+- `ICartModel`
+- `IOrderModel`
 
-`PaymentMethod` - способ оплаты (card | cash).
+## Контракты представлений
 
-Контракты моделей
+- `IView<T>`
+- `IProductCardView`
+- `IProductListView`
+- `ICartView`
+- `IOrderAddressView`
+- `IOrderContactsView`
+- `IOrderSuccessView`
+- `IModalView`
 
-`IProductModel`
+## Прочие типы
 
-`ICartModel`
+- `OrderFormData`
+- `OrderValidationErrors`
+- `BasketViewData`
+- `OrderAddressViewData`
+- `OrderContactsViewData`
 
-`IOrderModel`
-
-Контракты представлений
-
-`IView<T>`
-
-`IProductCardView`
-
-`IProductListView`
-
-`ICartView`
-
-`IOrderAddressView`
-
-`IOrderContactsView`
-
-`IOrderSuccessView`
-
-`IModalView`
-
-Прочие типы
-
-`OrderFormData`
-
-`OrderValidationErrors`
-
-`BasketViewData`
-
-`OrderAddressViewData`
-
-`OrderContactsViewData`
-
-Типизация используется во всех слоях приложения и обеспечивает согласованность архитектуры.
+Типизация используется во всех слоях приложения и обеспечивает согласованность архитектуры приложения.

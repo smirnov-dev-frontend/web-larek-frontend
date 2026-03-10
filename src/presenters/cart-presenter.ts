@@ -1,29 +1,22 @@
 import { EventEmitter } from '../components/base/Events';
-import { cloneTemplate } from '../utils/utils';
 import { AppEvent } from '../types';
 import type { ICartModel, IProductModel, ApiProduct } from '../types';
 import { Modal } from '../views/modal';
 import { BasketView } from '../views/basket';
-import { BasketItemView } from '../views/basket-item';
 import { HeaderBasketView } from '../views/header-basket';
 
-function formatPrice(price: number | null): string {
-   return price === null ? 'Бесценно' : `${price} синапсов`;
-}
+type CreateBasketItem = (product: ApiProduct, index: number) => HTMLElement;
 
 export class CartPresenter {
-   private readonly basketView: BasketView;
-
    constructor(
       private readonly cartModel: ICartModel,
       private readonly productModel: IProductModel,
       private readonly headerBasket: HeaderBasketView,
+      private readonly basketView: BasketView,
+      private readonly createBasketItem: CreateBasketItem,
       private readonly modal: Modal,
       private readonly events: EventEmitter
-   ) {
-      const basketRoot = cloneTemplate<HTMLElement>('#basket');
-      this.basketView = new BasketView(basketRoot, this.events);
-   }
+   ) { }
 
    init(): void {
       this.events.on(AppEvent.CART_OPEN, () => this.openCart());
@@ -40,7 +33,7 @@ export class CartPresenter {
 
       const itemNodes = this.cartModel
          .getItems()
-         .map((product, index) => this.createBasketItemNode(product, index + 1));
+         .map((product, index) => this.createBasketItem(product, index + 1));
 
       this.basketView.render({
          items: itemNodes,
@@ -51,7 +44,7 @@ export class CartPresenter {
 
    private onAdd(productId: string): void {
       const product = this.productModel.getProductById(productId);
-      if (!product) return;
+      if (!product || product.price === null) return;
 
       this.cartModel.addProduct(product);
    }
@@ -63,19 +56,5 @@ export class CartPresenter {
    private openCart(): void {
       this.modal.setContent(this.basketView.render());
       this.modal.open();
-   }
-
-   private createBasketItemNode(product: ApiProduct, index: number): HTMLElement {
-      const node = cloneTemplate<HTMLElement>('#card-basket');
-      const item = new BasketItemView(node, this.events);
-
-      item.render({
-         index,
-         title: product.title,
-         priceText: formatPrice(product.price),
-         productId: product.id,
-      });
-
-      return node;
    }
 }

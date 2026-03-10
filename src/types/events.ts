@@ -1,7 +1,9 @@
 import type { PaymentMethod } from './api';
 
 export enum AppEvent {
-   PRODUCT_SELECTED = 'product:selected',
+   CATALOG_CHANGED = 'catalog:changed',
+
+   PREVIEW_TOGGLE = 'preview:toggle',
 
    CART_OPEN = 'cart:open',
    CART_ADD = 'cart:add',
@@ -21,10 +23,6 @@ export enum AppEvent {
    MODAL_CLOSE = 'modal:close',
 }
 
-export interface ProductSelectedEvent {
-   productId: string;
-}
-
 export interface CartAddEvent {
    productId: string;
 }
@@ -32,10 +30,6 @@ export interface CartAddEvent {
 export interface CartRemoveEvent {
    productId: string;
 }
-
-export interface CartClearEvent { }
-
-export interface CartOpenEvent { }
 
 export interface OrderFieldChangeEvent {
    field: 'payment' | 'address' | 'email' | 'phone';

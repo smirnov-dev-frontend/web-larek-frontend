@@ -1,24 +1,23 @@
 import { Component } from '../components/base/Component';
-import { EventEmitter } from '../components/base/Events';
 import { ensureElement } from '../utils/utils';
-import { AppEvent } from '../types';
 
 type BasketItemData = {
    index: number;
    title: string;
    priceText: string;
-   productId: string;
+};
+
+type BasketItemActions = {
+   onDelete: () => void;
 };
 
 export class BasketItemView extends Component<BasketItemData> {
-   private _productId = '';
-
    private readonly indexEl: HTMLElement;
    private readonly titleEl: HTMLElement;
    private readonly priceEl: HTMLElement;
    private readonly deleteBtn: HTMLButtonElement;
 
-   constructor(container: HTMLElement, private readonly events: EventEmitter) {
+   constructor(container: HTMLElement, actions: BasketItemActions) {
       super(container);
 
       this.indexEl = ensureElement('.basket__item-index', container);
@@ -26,9 +25,7 @@ export class BasketItemView extends Component<BasketItemData> {
       this.priceEl = ensureElement('.card__price', container);
       this.deleteBtn = ensureElement<HTMLButtonElement>('.basket__item-delete', container);
 
-      this.deleteBtn.addEventListener('click', () => {
-         this.events.emit(AppEvent.CART_REMOVE, { productId: this._productId });
-      });
+      this.deleteBtn.addEventListener('click', actions.onDelete);
    }
 
    set index(value: number) {
@@ -41,9 +38,5 @@ export class BasketItemView extends Component<BasketItemData> {
 
    set priceText(value: string) {
       this.priceEl.textContent = value;
-   }
-
-   set productId(value: string) {
-      this._productId = value;
    }
 }

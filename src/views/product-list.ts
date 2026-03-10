@@ -1,10 +1,12 @@
+import { Component } from '../components/base/Component';
 import type { IProductListView } from '../types';
 
-export class ProductListView implements IProductListView {
-   constructor(private readonly container: HTMLElement) { }
+export class ProductListView extends Component<undefined> implements IProductListView {
+   constructor(container: HTMLElement) {
+      super(container);
+   }
 
-   render(items: HTMLElement[]): HTMLElement {
+   set items(items: HTMLElement[]) {
       this.container.replaceChildren(...items);
-      return this.container;
    }
 }

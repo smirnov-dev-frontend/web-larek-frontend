@@ -1,21 +1,21 @@
 import { Component } from '../components/base/Component';
-import { EventEmitter } from '../components/base/Events';
 import { CDN_URL, categoryMap } from '../utils/constants';
 import { ensureElement } from '../utils/utils';
 import type { ProductCardViewData } from '../types';
-import { AppEvent } from '../types';
 
 type CardContainer = HTMLButtonElement;
 
-export class ProductCardView extends Component<ProductCardViewData> {
-   private id = '';
+type ProductCardActions = {
+   onClick: () => void;
+};
 
+export class ProductCardView extends Component<ProductCardViewData> {
    private readonly titleEl: HTMLElement;
    private readonly priceEl: HTMLElement;
    private readonly imageEl: HTMLImageElement;
    private readonly categoryEl: HTMLElement;
 
-   constructor(container: CardContainer, private readonly events: EventEmitter) {
+   constructor(container: CardContainer, actions: ProductCardActions) {
       super(container);
 
       this.titleEl = ensureElement('.card__title', container);
@@ -23,9 +23,7 @@ export class ProductCardView extends Component<ProductCardViewData> {
       this.imageEl = ensureElement<HTMLImageElement>('.card__image', container);
       this.categoryEl = ensureElement('.card__category', container);
 
-      container.addEventListener('click', () => {
-         this.events.emit(AppEvent.PRODUCT_SELECTED, { productId: this.id });
-      });
+      container.addEventListener('click', actions.onClick);
    }
 
    set category(value: string) {

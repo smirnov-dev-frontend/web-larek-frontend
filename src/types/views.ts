@@ -2,7 +2,6 @@ import type { IView, IModal } from './common';
 import type { PaymentMethod } from './api';
 
 export interface ProductCardViewData {
-   id: string;
    title: string;
    price: string;
    isInCart: boolean;
@@ -12,8 +11,8 @@ export interface IProductCardView extends IView<ProductCardViewData> {
    setSelected(selected: boolean): void;
 }
 
-export interface IProductListView {
-   render(items: HTMLElement[]): HTMLElement;
+export interface IProductListView extends IView<undefined> {
+   set items(items: HTMLElement[]);
 }
 
 export interface BasketViewData {
